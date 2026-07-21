@@ -107,14 +107,39 @@ def stack_padded_sequences_to_batch(padded_sequences):
     sentence= torch.tensor(padded_sequences, dtype=torch.long)
     return sentence
 
-# Step 7 - scale_embeddings_by_sqrt_d_model (not yet solved)
-# TODO: implement
+# Step 7 - scale_embeddings_by_sqrt_d_model
+import math
+import torch
 
-# Step 8 - compute_positional_div_term (not yet solved)
-# TODO: implement
+def scale_embeddings_by_sqrt_d_model(embeddings, d_model):
+    """Scale a token embedding tensor by sqrt(d_model)."""
+    # TODO: rescale embeddings by sqrt(d_model) as in the original Transformer paper
+    
+    return math.sqrt(d_model) * embeddings
 
-# Step 9 - build_position_index_column (not yet solved)
-# TODO: implement
+# Step 8 - compute_positional_div_term
+import torch
+import math
+
+def compute_positional_div_term(d_model):
+    # TODO: return a 1D FloatTensor of length d_model // 2 holding the sinusoidal frequency divisors
+    answer=torch.empty(d_model//2, dtype=torch.float)
+
+    for i in range(d_model//2):
+
+        term= math.exp( 2 * i  * (-math.log(10000)/d_model))
+        answer[i]= term
+    
+    return answer
+
+# Step 9 - build_position_index_column
+import torch
+
+def build_position_index_column(max_len):
+    """Return a (max_len, 1) float tensor of [0, 1, ..., max_len-1]."""
+    # TODO: build a column vector of position indices from 0 to max_len-1
+
+    return torch.arange(max_len,dtype=torch.float32).reshape(-1,1)
 
 # Step 10 - fill_even_indices_with_sin (not yet solved)
 # TODO: implement

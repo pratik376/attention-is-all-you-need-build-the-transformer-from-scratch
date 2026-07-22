@@ -173,7 +173,7 @@ def build_sinusoidal_positional_encoding(max_len, d_model):
     """Assemble the (max_len, d_model) sinusoidal positional encoding matrix."""
     # TODO: build the (max_len, d_model) sinusoidal positional encoding matrix
 
-    positional_matrix=torch.ones(max_len,d_model)
+    positional_matrix=torch.zeros(max_len,d_model)
     position = build_position_index_column(max_len)
     term=compute_positional_div_term(d_model)
 

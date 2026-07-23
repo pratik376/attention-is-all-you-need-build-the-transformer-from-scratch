@@ -274,8 +274,33 @@ def apply_attention_weights_to_values(attention_weights, value):
     
     return attention_weights @ value
 
-# Step 22 - scaled_dot_product_attention (not yet solved)
-# TODO: implement
+# Step 22 - scaled_dot_product_attention
+import torch
+import math
+
+def scaled_dot_product_attention(query, key, value, mask=None):
+    """Run scaled dot-product attention; return (context, attention_weights)."""
+    
+    # 1) raw attention scores: Q @ K^T
+    row_score = compute_raw_attention_scores(query, key)
+    
+    # 2) scale by sqrt(d_k)
+    d_k = query.shape[-1]
+    scaled_attention = scale_attention_scores(row_score, d_k)
+    
+    # 3) optionally apply mask
+    if mask is not None:
+        masked_scores = mask_attention_scores_with_neg_inf(scaled_attention, mask)
+    else:
+        masked_scores = scaled_attention
+    
+    # 4) softmax over the last axis
+    attention_weights = softmax_attention_weights(masked_scores)
+    
+    # 5) weighted sum of values
+    context = apply_attention_weights_to_values(attention_weights, value)
+    
+    return context, attention_weights
 
 # Step 23 - split_last_dim_into_heads (not yet solved)
 # TODO: implement

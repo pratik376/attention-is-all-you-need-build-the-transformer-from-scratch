@@ -455,8 +455,16 @@ def position_wise_feed_forward_network(x, w1, b1, w2, b2):
 
     return output
 
-# Step 35 - compute_layer_norm_mean_and_variance (not yet solved)
-# TODO: implement
+# Step 35 - compute_layer_norm_mean_and_variance
+import torch
+
+def compute_layer_norm_mean_and_variance(x):
+    # TODO: return (mean, variance) reduced over the last dim with shape (..., 1)
+    
+    mean=x.mean(dim=-1,keepdims=True)
+    variance= x.var(dim=-1, keepdims=True,unbiased=False)
+
+    return (mean,variance)
 
 # Step 36 - normalize_and_scale_with_gamma_beta (not yet solved)
 # TODO: implement

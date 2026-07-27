@@ -570,8 +570,102 @@ def decoder_layer_feed_forward_sublayer(y, w1, b1, w2, b2, gamma, beta):
     
     return output
 
-# Step 46 - assemble_decoder_layer (not yet solved)
-# TODO: implement
+# Step 46 - assemble_decoder_layer
+def assemble_decoder_layer(y, encoder_output, layer_params, num_heads, src_mask, tgt_mask):
+    def pick_param(*exact_names, required_parts=None, exclude_parts=None):
+        for name in exact_names:
+            if name in layer_params:
+                return layer_params[name]
+
+        if required_parts is not None:
+            for k, v in layer_params.items():
+                if all(part in k for part in required_parts):
+                    if exclude_parts is None or all(part not in k for part in exclude_parts):
+                        return v
+
+        raise KeyError(exact_names[0] if exact_names else str(required_parts))
+
+    # 1) masked self-attention
+    output = decoder_layer_masked_self_attention_sublayer(
+        y,
+        pick_param(
+            "masked_self_attention_w_q", "masked_self_w_q", "self_attn_w_q", "w_q",
+            required_parts=("self", "q"),
+            exclude_parts=("cross",)
+        ),
+        pick_param(
+            "masked_self_attention_w_k", "masked_self_w_k", "self_attn_w_k", "w_k",
+            required_parts=("self", "k"),
+            exclude_parts=("cross",)
+        ),
+        pick_param(
+            "masked_self_attention_w_v", "masked_self_w_v", "self_attn_w_v", "w_v",
+            required_parts=("self", "v"),
+            exclude_parts=("cross",)
+        ),
+        pick_param(
+            "masked_self_attention_w_o", "masked_self_w_o", "self_attn_w_o", "w_o",
+            required_parts=("self", "o"),
+            exclude_parts=("cross",)
+        ),
+        pick_param(
+            "masked_self_attention_gamma", "masked_self_gamma", "self_attn_gamma", "attn_gamma",
+            required_parts=("self", "gamma"),
+            exclude_parts=("cross",)
+        ),
+        pick_param(
+            "masked_self_attention_beta", "masked_self_beta", "self_attn_beta", "attn_beta",
+            required_parts=("self", "beta"),
+            exclude_parts=("cross",)
+        ),
+        num_heads,
+        tgt_mask,
+    )
+
+    # 2) cross-attention
+    output = decoder_layer_cross_attention_sublayer(
+        output,
+        encoder_output,
+        pick_param(
+            "cross_attention_w_q", "cross_w_q", "cross_attn_w_q",
+            required_parts=("cross", "q")
+        ),
+        pick_param(
+            "cross_attention_w_k", "cross_w_k", "cross_attn_w_k",
+            required_parts=("cross", "k")
+        ),
+        pick_param(
+            "cross_attention_w_v", "cross_w_v", "cross_attn_w_v",
+            required_parts=("cross", "v")
+        ),
+        pick_param(
+            "cross_attention_w_o", "cross_w_o", "cross_attn_w_o",
+            required_parts=("cross", "o")
+        ),
+        pick_param(
+            "cross_attention_gamma", "cross_gamma", "cross_attn_gamma", "attn_gamma",
+            required_parts=("cross", "gamma")
+        ),
+        pick_param(
+            "cross_attention_beta", "cross_beta", "cross_attn_beta", "attn_beta",
+            required_parts=("cross", "beta")
+        ),
+        num_heads,
+        src_mask,
+    )
+
+    # 3) feed-forward network
+    output = decoder_layer_feed_forward_sublayer(
+        output,
+        pick_param("w1", required_parts=("w1",)),
+        pick_param("b1", required_parts=("b1",)),
+        pick_param("w2", required_parts=("w2",)),
+        pick_param("b2", required_parts=("b2",)),
+        pick_param("ffn_gamma", required_parts=("ffn", "gamma")),
+        pick_param("ffn_beta", required_parts=("ffn", "beta")),
+    )
+
+    return output
 
 # Step 47 - stack_decoder_layers (not yet solved)
 # TODO: implement

@@ -764,8 +764,36 @@ def run_transformer_forward(src_token_ids, tgt_token_ids, model_params, num_head
 
     return log_probs
 
-# Step 52 - init_encoder_layer_parameters (not yet solved)
-# TODO: implement
+# Step 52 - init_encoder_layer_parameters
+import torch
+import math
+
+def init_encoder_layer_parameters(d_model, num_heads, d_ff):
+
+    """Return a dict of leaf tensors with requires_grad=True for one encoder layer."""
+    # TODO: allocate w_q, w_k, w_v, w_o, w1, b1, w2, b2, attn_gamma, attn_beta, ffn_gamma, ffn_beta.
+
+
+    params={
+        'w_q': torch.randn(d_model, d_model, dtype=torch.float32, requires_grad=True),
+        'w_k': torch.randn(d_model, d_model, dtype=torch.float32, requires_grad=True),
+        'w_v':torch.randn(d_model, d_model, dtype=torch.float32, requires_grad=True),
+        'w_o':torch.randn(d_model, d_model, dtype=torch.float32, requires_grad=True),
+
+        'w1': torch.rand(d_model,d_ff,dtype=torch.float32, requires_grad=True),
+        'b1': torch.zeros(d_ff,dtype=torch.float32, requires_grad=True),   
+        'w2': torch.rand(d_ff,d_model,dtype=torch.float32, requires_grad=True),
+        'b2': torch.zeros(d_model,dtype=torch.float32, requires_grad=True),
+
+        'attn_gamma': torch.ones(d_model,dtype=torch.float32, requires_grad=True),
+        'attn_beta': torch.zeros(d_model,dtype=torch.float32, requires_grad=True),
+
+        'ffn_gamma':torch.ones(d_model,dtype=torch.float32, requires_grad=True),
+        'ffn_beta':torch.zeros(d_model,dtype=torch.float32, requires_grad=True)  
+
+    }
+
+    return params
 
 # Step 53 - init_decoder_layer_parameters (not yet solved)
 # TODO: implement

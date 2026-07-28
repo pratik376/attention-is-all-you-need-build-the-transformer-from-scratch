@@ -711,8 +711,58 @@ def apply_log_softmax_over_vocab(logits):
     
     return F.log_softmax(logits, dim=-1)
 
-# Step 51 - run_transformer_forward (not yet solved)
-# TODO: implement
+# Step 51 - run_transformer_forward
+def run_transformer_forward(src_token_ids, tgt_token_ids, model_params, num_heads, pad_id):
+    token_embedding = model_params["token_embedding"]
+    encoder_layers = model_params["encoder_layers"]
+    decoder_layers = model_params["decoder_layers"]
+    output_projection = model_params["output_projection"]
+    d_model = token_embedding.shape[1]
+
+    # 1) Embed source and target token ids
+    src_embeddings = token_embedding[src_token_ids]
+    tgt_embeddings = token_embedding[tgt_token_ids]
+
+    # 2) Scale embeddings
+    src_embeddings = scale_embeddings_by_sqrt_d_model(src_embeddings, d_model)
+    tgt_embeddings = scale_embeddings_by_sqrt_d_model(tgt_embeddings, d_model)
+
+    # 3) Add positional encodings
+    src_len = src_token_ids.shape[1]
+    tgt_len = tgt_token_ids.shape[1]
+
+    src_pos_enc = build_sinusoidal_positional_encoding(src_len, d_model)
+    tgt_pos_enc = build_sinusoidal_positional_encoding(tgt_len, d_model)
+
+    src_embeddings = add_positional_encoding_to_embeddings(src_embeddings, src_pos_enc)
+    tgt_embeddings = add_positional_encoding_to_embeddings(tgt_embeddings, tgt_pos_enc)
+
+    # 4) Build masks
+    src_mask = build_padding_mask(src_token_ids, pad_id)
+    tgt_padding_mask = build_padding_mask(tgt_token_ids, pad_id)
+    tgt_causal_mask = build_causal_mask(tgt_len)
+    tgt_mask = combine_padding_and_causal_masks(tgt_padding_mask, tgt_causal_mask)
+
+    # 5) Run encoder stack
+    encoder_output = stack_encoder_layers(src_embeddings, encoder_layers, num_heads, src_mask)
+
+    # 6) Run decoder stack
+    decoder_output = stack_decoder_layers(
+        tgt_embeddings,
+        encoder_output,
+        decoder_layers,
+        num_heads,
+        src_mask,
+        tgt_mask
+    )
+
+    # 7) Project to vocabulary logits
+    logits = apply_final_output_projection(decoder_output, output_projection, None)
+
+    # 8) Convert logits to log probabilities
+    log_probs = apply_log_softmax_over_vocab(logits)
+
+    return log_probs
 
 # Step 52 - init_encoder_layer_parameters (not yet solved)
 # TODO: implement

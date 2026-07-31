@@ -398,10 +398,10 @@ def assemble_multi_head_attention_forward(query, key, value, w_q, w_k, w_v, w_o,
     k = k.reshape(B, Lk, num_heads, d_k).transpose(1, 2)   # (B, H, Lk, d_k)
     v = v.reshape(B, Lk, num_heads, d_k).transpose(1, 2)   # (B, H, Lk, d_k)
 
-    # Attention per head
-    context_h, _ = scaled_dot_product_attention(q, k, v, mask)
+    # Attention
+    context_h, _ = multi_head_scaled_dot_product_attention(q, k, v, mask)
 
-    # Merge heads back to (B, Lq, d_model)
+    # Merge heads back
     context = context_h.transpose(1, 2).contiguous().reshape(B, Lq, d_model)
 
     # Final output projection

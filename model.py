@@ -713,15 +713,17 @@ def apply_log_softmax_over_vocab(logits):
 
 # Step 51 - run_transformer_forward
 def run_transformer_forward(src_token_ids, tgt_token_ids, model_params, num_heads, pad_id):
-    token_embedding = model_params["token_embedding"]
+    src_embedding = model_params.get("src_embedding", model_params.get("token_embedding"))
+    tgt_embedding = model_params.get("tgt_embedding", model_params.get("token_embedding"))
     encoder_layers = model_params["encoder_layers"]
     decoder_layers = model_params["decoder_layers"]
     output_projection = model_params["output_projection"]
-    d_model = token_embedding.shape[1]
+
+    d_model = src_embedding.shape[1]
 
     # 1) Embed source and target token ids
-    src_embeddings = token_embedding[src_token_ids]
-    tgt_embeddings = token_embedding[tgt_token_ids]
+    src_embeddings = src_embedding[src_token_ids]
+    tgt_embeddings = tgt_embedding[tgt_token_ids]
 
     # 2) Scale embeddings
     src_embeddings = scale_embeddings_by_sqrt_d_model(src_embeddings, d_model)
@@ -1086,8 +1088,45 @@ def zero_all_parameter_gradients(parameter_list):
 
         params.grad= None
 
-# Step 71 - compute_batch_training_loss (not yet solved)
-# TODO: implement
+# Step 71 - compute_batch_training_loss
+def compute_batch_training_loss(src_batch, tgt_batch, model_params, config):
+    # Read config
+    pad_id = config["pad_id"]
+    start_id = config["start_id"]
+    num_heads = config["num_heads"]
+    smoothing = config["smoothing"]
+    vocab_size = config["vocab_size"]
+
+    # Teacher-forced decoder input
+    decoder_input = shift_targets_right_with_start_token(tgt_batch, start_id)
+
+    # Forward pass: returns log probabilities (B, T, V)
+    log_probs = run_transformer_forward(
+        src_batch,
+        decoder_input,
+        model_params,
+        num_heads=num_heads,
+        pad_id=pad_id,
+    )
+
+    # Build label-smoothed target distribution
+    smoothed = build_uniform_smoothing_distribution(
+        log_probs.shape,
+        vocab_size=vocab_size,
+        epsilon=smoothing,
+    )
+    smoothed = set_confidence_on_gold_tokens(
+        smoothed,
+        tgt_batch,
+        confidence=1.0 - smoothing,
+    )
+    smoothed = zero_pad_column_and_pad_token_rows(smoothed, tgt_batch, pad_id)
+
+    # KL-style loss over all positions, then average over non-pad tokens
+    total_loss = compute_label_smoothed_kl_loss(log_probs, smoothed)
+    loss = average_loss_over_non_pad_tokens(total_loss, tgt_batch, pad_id)
+
+    return loss
 
 # Step 72 - run_training_step_with_backprop (not yet solved)
 # TODO: implement

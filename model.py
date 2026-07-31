@@ -536,6 +536,9 @@ def decoder_layer_masked_self_attention_sublayer(y, w_q, w_k, w_v, w_o, gamma, b
 
 # Step 44 - decoder_layer_cross_attention_sublayer
 def decoder_layer_cross_attention_sublayer(y, encoder_output, w_q, w_k, w_v, w_o, gamma, beta, num_heads, src_mask):
+    if src_mask is not None and src_mask.ndim == 2:
+        src_mask = src_mask[:, None, None, :]   # (B, S) -> (B, 1, 1, S)
+
     attn_out = assemble_multi_head_attention_forward(
         y, encoder_output, encoder_output,
         w_q, w_k, w_v, w_o,

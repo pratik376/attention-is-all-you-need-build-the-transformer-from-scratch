@@ -384,28 +384,31 @@ def merge_heads_and_project_output(context, w_o, b_o):
 
 # Step 31 - assemble_multi_head_attention_forward
 def assemble_multi_head_attention_forward(query, key, value, w_q, w_k, w_v, w_o, num_heads, mask=None):
-    # Project separately
-    q = apply_linear_projection(query, w_q, None)
-    k = apply_linear_projection(key, w_k, None)
-    v = apply_linear_projection(value, w_v, None)
+    # Project separately so cross-attention works
+    q = query @ w_q
+    k = key @ w_k
+    v = value @ w_v
 
-    # Split each tensor with its own sequence length
-    Bq, Lq, d_model = q.shape
-    Bk, Lk, _ = k.shape
+    B, Lq, d_model = q.shape
+    Lk = k.shape[1]
+    Lv = v.shape[1]
+
     d_k = d_model // num_heads
 
-    q_h = q.reshape(Bq, Lq, num_heads, d_k).transpose(1, 2)  # (B, H, Lq, d_k)
-    k_h = k.reshape(Bk, Lk, num_heads, d_k).transpose(1, 2)  # (B, H, Lk, d_k)
-    v_h = v.reshape(Bk, Lk, num_heads, d_k).transpose(1, 2)  # (B, H, Lk, d_k)
+    # Split into heads: (B, L, d_model) -> (B, H, L, d_k)
+    q = q.reshape(B, Lq, num_heads, d_k).transpose(1, 2)
+    k = k.reshape(B, Lk, num_heads, d_k).transpose(1, 2)
+    v = v.reshape(B, Lv, num_heads, d_k).transpose(1, 2)
 
-    # Attention
-    context_h, _ = multi_head_scaled_dot_product_attention(q_h, k_h, v_h, mask)
+    # Per-head attention
+    context_h, _ = multi_head_scaled_dot_product_attention(q, k, v, mask)
 
-    # Merge heads
-    context = context_h.transpose(1, 2).contiguous().reshape(Bq, Lq, d_model)
+    # Merge heads: (B, H, L, d_k) -> (B, L, d_model)
+    context = context_h.transpose(1, 2).contiguous().reshape(B, Lq, d_model)
 
     # Output projection
-    return apply_linear_projection(context, w_o, None)
+    out = context @ w_o
+    return out
 
 # Step 32 - apply_ffn_first_linear_and_relu
 import torch

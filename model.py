@@ -384,12 +384,12 @@ def merge_heads_and_project_output(context, w_o, b_o):
 
 # Step 31 - assemble_multi_head_attention_forward
 def assemble_multi_head_attention_forward(query, key, value, w_q, w_k, w_v, w_o, num_heads, mask=None):
-    # Project
+    # Project to Q, K, V
     q = apply_linear_projection(query, w_q, None)
     k = apply_linear_projection(key, w_k, None)
     v = apply_linear_projection(value, w_v, None)
 
-    # Split each tensor separately so cross-attention works
+    # Split each tensor separately so cross-attention works when Lq != Lk
     B, Lq, d_model = q.shape
     Lk = k.shape[1]
     d_k = d_model // num_heads
@@ -404,9 +404,8 @@ def assemble_multi_head_attention_forward(query, key, value, w_q, w_k, w_v, w_o,
     # Merge heads back
     context = context_h.transpose(1, 2).contiguous().reshape(B, Lq, d_model)
 
-    # Output projection
-    out = apply_linear_projection(context, w_o, None)
-    return out
+    # Final output projection
+    return apply_linear_projection(context, w_o, None)
 
 # Step 32 - apply_ffn_first_linear_and_relu
 import torch

@@ -389,7 +389,7 @@ def assemble_multi_head_attention_forward(query, key, value, w_q, w_k, w_v, w_o,
     k = apply_linear_projection(key, w_k, None)
     v = apply_linear_projection(value, w_v, None)
 
-    # Split each tensor separately so cross-attention works when Lq != Lk
+    # Split each tensor independently so cross-attention works when Lq != Lk
     B, Lq, d_model = q.shape
     Lk = k.shape[1]
     d_k = d_model // num_heads
@@ -398,7 +398,7 @@ def assemble_multi_head_attention_forward(query, key, value, w_q, w_k, w_v, w_o,
     k_h = k.reshape(B, Lk, num_heads, d_k).transpose(1, 2)  # (B, H, Lk, d_k)
     v_h = v.reshape(B, Lk, num_heads, d_k).transpose(1, 2)  # (B, H, Lk, d_k)
 
-    # Attention
+    # Per-head attention
     context_h, _ = multi_head_scaled_dot_product_attention(q_h, k_h, v_h, mask)
 
     # Merge heads back

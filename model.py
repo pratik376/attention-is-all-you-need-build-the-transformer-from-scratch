@@ -389,23 +389,23 @@ def assemble_multi_head_attention_forward(query, key, value, w_q, w_k, w_v, w_o,
     k = apply_linear_projection(key, w_k, None)
     v = apply_linear_projection(value, w_v, None)
 
-    # Split each tensor separately, because q length may differ from k/v length
-    q_h = split_last_dim_into_heads(q, num_heads)
-    k_h = split_last_dim_into_heads(k, num_heads)
-    v_h = split_last_dim_into_heads(v, num_heads)
+    # Split each tensor separately so cross-attention works
+    B, Lq, d_model = q.shape
+    Lk = k.shape[1]
+    d_k = d_model // num_heads
 
-    q_h = transpose_heads_before_sequence(q_h)
-    k_h = transpose_heads_before_sequence(k_h)
-    v_h = transpose_heads_before_sequence(v_h)
+    q_h = q.reshape(B, Lq, num_heads, d_k).transpose(1, 2)  # (B, H, Lq, d_k)
+    k_h = k.reshape(B, Lk, num_heads, d_k).transpose(1, 2)  # (B, H, Lk, d_k)
+    v_h = v.reshape(B, Lk, num_heads, d_k).transpose(1, 2)  # (B, H, Lk, d_k)
 
     # Attention
     context_h, _ = multi_head_scaled_dot_product_attention(q_h, k_h, v_h, mask)
 
-    # Merge heads
-    merged = merge_heads_back_to_model_dim(context_h)
+    # Merge heads back
+    context = context_h.transpose(1, 2).contiguous().reshape(B, Lq, d_model)
 
     # Output projection
-    out = apply_linear_projection(merged, w_o, None)
+    out = apply_linear_projection(context, w_o, None)
     return out
 
 # Step 32 - apply_ffn_first_linear_and_relu

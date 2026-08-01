@@ -1119,11 +1119,68 @@ def compute_batch_training_loss(src_batch, tgt_batch, model_params, config):
 
     return loss
 
-# Step 72 - run_training_step_with_backprop (not yet solved)
-# TODO: implement
+# Step 72 - run_training_step_with_backprop
+def run_training_step_with_backprop(
+    src_batch,
+    tgt_batch,
+    parameter_list,
+    model_params,
+    optimizer_state,
+    step_number,
+    config,
+):
+    zero_all_parameter_gradients(parameter_list)
 
-# Step 73 - run_training_loop_for_steps (not yet solved)
-# TODO: implement
+    loss = compute_batch_training_loss(
+        src_batch,
+        tgt_batch,
+        model_params,
+        config,
+    )
+
+    loss.backward()
+
+    lr = compute_noam_learning_rate(
+        step_number,
+        config["d_model"],
+        config["warmup_steps"],
+    )
+
+    apply_adam_step_to_all_parameters(
+        parameter_list,
+        optimizer_state,
+        lr,
+        beta1=config.get("beta1", 0.9),
+        beta2=config.get("beta2", 0.98),
+        epsilon=config.get("epsilon", 1e-9),
+    )
+
+    return loss.item()
+
+# Step 73 - run_training_loop_for_steps
+def run_training_loop_for_steps(batches, parameter_list, model_params, optimizer_state, num_steps, config):
+    """Run num_steps training iterations, cycling through batches, and return per-step losses."""
+    # TODO: iterate for num_steps steps, calling run_training_step_with_backprop each time
+    
+    losses=[]
+    step_number =0
+    for step in range(num_steps):
+
+        src_batch, tgt_batch = batches[step % len(batches)]
+
+        step_number +=1
+        loss= run_training_step_with_backprop(
+        src_batch,
+        tgt_batch,
+        parameter_list,
+        model_params,
+        optimizer_state,
+        step_number,
+        config)
+        
+        losses.append(loss)
+    
+    return losses
 
 # Step 74 - pick_next_token_by_argmax
 import torch
